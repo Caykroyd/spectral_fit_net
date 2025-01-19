@@ -47,7 +47,7 @@ class Pattern:
         return filter(lambda p : Pattern.match(p, pattern, wildcard), key_list)
 
 class SpectralWindow:
-    def __init__(self, name : str, lims : tuple, emlines : list, wl, **kwargs):
+    def __init__(self, name : str, emlines : list, x_lims : tuple = None, wl = None, **kwargs):
         '''
         Represents a spectral window.
 
@@ -57,30 +57,29 @@ class SpectralWindow:
             kwargs: additional metadata to be saved on this instance
         '''
         self.name = name
-        self.lims = lims
+        self.x_lims = x_lims
         self.lines = emlines
         self.wl = wl
         for k, v in kwargs.items():
             setattr(self, k, v)
     
     def __repr__(self):
-        return f'SpectralWindow(name={self.name}, lims={self.lims}, lines={self.lines})'
+        return f'SpectralWindow(name={self.name}, x_lims={self.x_lims}, lines={self.lines})'
+
 
 class EmissionLine:
-    def __init__(self, name : str, rest_wavelength : float, channel : int, num_components : int, constraints : dict = None, par_lims = None, **kwargs):
+    def __init__(self, name : str, channel : str, num_components : int, constraints : dict = None, par_lims = None, **kwargs):
         '''
         Represents an emission line with potential parameter constraints.
 
         Args:
             name (str): Name of the emission line.
-            rest_wavelength (float): Rest-frame wavelength of the line.
             channel: channel where this line is present.
             num_components (int): Number of Gaussian components for this line.
             constraints: Dictionary of constraints on parameters. Each constraint is a lambda function depending on free parameters.
             kwargs: additional metadata to be saved on this instance
         '''
         self.name = name
-        self.rest_wavelength = rest_wavelength
         self.channel = channel
         self.num_components = num_components
         self.constraints = constraints or {}
@@ -89,8 +88,11 @@ class EmissionLine:
             setattr(self, k, v)
         self.build_parameters(par_lims)
 
-    def build_parameters(self, par_lims = None):
+    def __repr__(self):
+        return f'EmissionLine(name={self.name}, channel={self.channel}, ncomp={self.num_components})'
 
+    def build_parameters(self, par_lims = None):
+        
         def par_lims_func(par):
             '''Returns parameter limits based on input type.'''
             if par_lims is None:
@@ -113,6 +115,7 @@ class EmissionLine:
             return tuple(lims)
             
         # create parameters for each Gaussian component
+        # TODO: If parameter is not a tied parameter, keep lims = None
         self.parameters = [
             Parameter(
                 key=(self.name, param_name, comp_idx), 
@@ -237,7 +240,11 @@ class GaussianSuperposition(nn.Module):
     @property 
     def max_components_per_line(self):
          # There may be a variable amount of components in each line
-        return max(line.num_components for line in self.emission_lines)
+        return max(line.num_components for line in self.emission_lines.values())
+
+    @property
+    def signal_lims(self):
+        return [ch for ch in self.channels.values()]
 
     def components(self, x, network_outputs):
         '''
@@ -273,7 +280,7 @@ class GaussianSuperposition(nn.Module):
         # Fill parameter tensors with values obtained from the mapping
         for ch_idx, ch in enumerate(self.channels.values()):
             for ln_idx, ln_name in enumerate(ch.lines):
-                ln = next(ln for ln in self.emission_lines if ln.name == ln_name)
+                ln = self.emission_lines[ln_name]
                 ncomp = ln.num_components
                 for comp_idx in range(ncomp):
                     amp[:, ch_idx, ln_idx, comp_idx]   = params[ln_name, 'amp', comp_idx]
@@ -317,24 +324,33 @@ class GaussianSuperposition(nn.Module):
         return torch.sum(y, dim=(-2,-3)) # sum along components & spectral lines in channel
 
 
-    def fit(self, x, params, z, fit_amp = True, fit_mu = True, fit_sigma = True, nsteps=120):
+    def fit(self, x, params, z, lr=5e-2, nsteps=100, err='mse', reg=None, verbose=False):
         # fits parameters to data series z(x), using current parameters as initial guess
         
-        params = [nn.Parameter(params.clone().detach())]
+        params = nn.Parameter(params.clone().detach())
         # possible masking of parameters that are fixed
 
-        optimizer = optim.Adam(params, lr=1e-2, amsgrad=True)
+        optimizer = optim.Adam([params], lr=lr, amsgrad=True)
         
+        if isinstance(err, str):
+            err = dict.get({
+                'mse': F.mse_loss
+            }, err)
+        
+        if reg is None:
+            reg = lambda par: 0
+
         for epoch in range(nsteps):
             optimizer.zero_grad()
-            out = self(x, *params)
-            loss = F.mse_loss(out, z)
-            print(f'Fit epoch {epoch+1}: loss = {loss.item():.3e}')#, f'  Amp: {amp}', f'  mu: {mu},', f'  sigma: {sigma}', sep='\n')
+            signal = self(x, params)
+            loss = err(signal, z) + reg(params)
+            if verbose: 
+                print(f'Fit epoch {epoch+1}: loss = {loss.item():.3e}')#, f'  Amp: {amp}', f'  mu: {mu},', f'  sigma: {sigma}', sep='\n')
             loss.backward()
             optimizer.step()
         
         # Return fitted values
-        return params[0].detach()
+        return params.detach()
 
 # # Example use
 

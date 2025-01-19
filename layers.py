@@ -68,7 +68,7 @@ class CoordConv1d(nn.Module):
     See: https://doi.org/10.48550/arXiv.1807.03247
 
     Discussion:
-    - Allowing one to pass the coordinates in the forward() method can be useful when the coordinate partition is not linear
+    - Allowing one explicitly to pass the coordinates in the forward() method can be useful when the coordinate partition is not uniformly spaced
     - However, in models where channels are changing might not be useful.
     '''
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True):
@@ -85,7 +85,7 @@ class CoordConv1d(nn.Module):
         N, C, D = z.size()
                 
         if self.coords is None or self.coords.size(-1) != D:
-            self.coords = torch.linspace(-1, 1, D, device=z.device).view(1, 1, D)
+            self.coords = torch.linspace(0, 1, D, device=z.device).view(1, 1, D)
             self.coords.requires_grad = False  # This tensor should not require gradients
         
         # Expand the coords tensor to match the batch size dynamically
