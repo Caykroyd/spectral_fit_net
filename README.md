@@ -115,6 +115,7 @@ Coordinate Convolution models inject explicit coordinate information into the co
 ```mermaid
 %%{init: {
   "flowchart": {
+    "padding": 2,
     "nodeSpacing": 18,
     "rankSpacing": 18,
     "wrappingWidth": 500
