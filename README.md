@@ -17,12 +17,15 @@ This project explores how to reconstruct **multi-line spectroscopic emission fea
   * [5. Losses and optimization](#5-losses-and-optimization)
   * [6. Prediction refinement](#6-prediction-refinement)
 * [Dependencies](#dependencies)
+* [Acknowledgements](#acknowledgements)
 
 ---
 
 ## Scientific Motivation
 
-Galaxy mergers often produce complex emission-line profiles that cannot be described well by a single Gaussian component. Multiple kinematic components may coexist along the line of sight, for example because of overlapping gas systems, disturbed dynamics, or outflow/inflow structures. This project tackles that problem by modeling each emission line with **two Gaussian components** and learning to recover the associated amplitudes and shared kinematic parameters from the observed spectra.
+Galaxy mergers often produce complex emission-line profiles that cannot be described well by a single Gaussian component. Multiple kinematic components may coexist along the line of sight, for example because of overlapping gas systems, disturbed dynamics, or outflow/inflow structures. This project tackles that problem by modeling each emission line with **two Gaussian components** and learning to recover the associated amplitudes and shared kinematic parameters from the observed spectra. 
+
+For possible applications of multi-line spectroscopic Gaussian inference to galaxy mergers see [Shaji et al. 2025](https://www.aanda.org/articles/aa/full_html/2026/02/aa56357-25/aa56357-25.html).
 
 ---
 
@@ -32,21 +35,21 @@ Two jupyter notebooks can be explored:
 
 * `gaussian_fit_toy.ipynb`: a **toy setup** built on artificial data and simplified synthetic channels,
 
-* `gaussian_fit.ipynb`: a **real setup** that works with true physical emission lines and real-world spectra. Requires a MaNGA FITS cube, which can be found in the `data/` folder.
+* `gaussian_fit.ipynb`: a **real setup** that works with true physical emission lines and real-world spectra. Requires a MaNGA FITS cube ([Bundy et al. 2015](https://iopscience.iop.org/article/10.1088/0004-637X/798/1/7)), which can be found in the `data/` folder.
 
 This code generally performs the following steps:
 
-* Create the Gaussian model definition
+* Create the Gaussian model definition:
     * The set of spectral windows;
     * Which lines fall into each window;
     * How many Gaussian components to use per line;
     * The free parameter limits;
-    * The constraints tying parameters together.
-* Generate synthetic training data with known ground-truth parameters
-* Train a chosen neural network architecture
-* Predict parameters from real-world or toy data
-    * predict parameters with network
-    * refinement step through classical optimization
+    * The constraints tying parameters together;
+* Generate synthetic training data with known ground-truth parameters;
+* Train a chosen neural network architecture;
+* Predict parameters from real-world or toy data:
+    * predict parameters with network;
+    * refinement step through classical optimization.
 
 
 ---
@@ -110,7 +113,7 @@ The learning task is an inverse regression problem with the goal of estimating a
 Several candidate architectures are implemented and can be swapped in and out. We explore design families with Residual Blocks (ResNet), Coordinate Convolutions, different pooling and global aggregation methods. Please see `models.py` for a list of all architectures.
 
 We finally settle for `CoordGaussNet_2` with 3M parameters. 
-Coordinate Convolution models inject explicit coordinate information into the convolutional pipeline, which is attractive for spectroscopy because the exact position of peaks matters.
+Coordinate Convolution models inject explicit coordinate information into the convolutional pipeline, which is attractive for spectroscopy because the exact position of peaks matters. Each Coordinate Convolution is followed by a ReLU and Batch Normalization layer.
 
 ```mermaid
 %%{init: {
@@ -127,20 +130,20 @@ Coordinate Convolution models inject explicit coordinate information into the co
 flowchart TD
     A["Input, 4 × 100"]
 
-    B["CoordConv1D(k = 5), 4 → 32"]
-    C["CoordConv1D(k = 3), 32 → 64"]
+    B["CoordConv1D(k = 5), 4 → 40"]
+    C["CoordConv1D(k = 3), 40 → 80"]
     P1["MaxPool1D ÷2"]
 
-    D["CoordConv1D(k = 3), 64 → 128"]
-    E["CoordConv1D(k = 3), 128 → 128"]
+    D["CoordConv1D(k = 3), 80 → 160"]
+    E["CoordConv1D(k = 3), 160 → 160"]
     P2["MaxPool1D ÷2"]
 
-    F["CoordConv1D(k = 3), 128 → 256"]
-    G["CoordConv1D(k = 3), 256 → 256"]
+    F["CoordConv1D(k = 3), 160 → 320"]
+    G["CoordConv1D(k = 3), 320 → 320"]
     P3["MaxPool1D ÷2"]
 
-    H["CoordConv1D(k = 3), 256 → 512"]
-    I["CoordConv1D(k = 3), 512 → 512"]
+    H["CoordConv1D(k = 3), 320 → 640"]
+    I["CoordConv1D(k = 3), 640 → 640"]
     P4["MaxPool1D ÷2"]
 
     J["Flatten, 3840"]
@@ -227,3 +230,7 @@ pip install ipython jupyter
 ```
 
 ---
+
+## Acknowledgements
+
+Special thanks to Aashiya Anitha Shaji for providing the project idea.
