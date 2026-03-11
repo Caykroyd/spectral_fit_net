@@ -1,0 +1,45 @@
+'OIIa':
+    fullname: '[OII]3727'
+    wavelength: 3727.092
+'OIIb':
+    fullname: '[OII]3729'
+    wavelength: 3729.875
+# 'Hdelta':
+#     fullname: 'H$\delta$'
+#     wavelength: 4102.8922
+# 'Hgamma':
+#     fullname: 'H$\gamma$'
+#     wavelength: 4341.6837
+'Hbeta':
+    fullname: 'H$\beta$'
+    wavelength: 4862.6830
+'OIIIa':
+    fullname: '[OIII]5008'
+    wavelength: 5008.240 
+'OIIIb':
+    fullname: '[OIII]4960'
+    wavelength: 4960.295
+# 'NI':
+#     fullname: '[NI]5199'
+#     wavelength: 5199.349
+# 'OIa':
+#     fullname: '[OI]6302' 
+#     wavelength: 6302.046
+# 'OIb':
+#     fullname: 'OI6365'
+#     wavelength: 6365.536
+'NIIb':
+    fullname: '[NII]6550'
+    wavelength: 6549.86
+'Halpha':
+    fullname: 'H$\alpha$'
+    wavelength: 6564.608
+'NIIa':
+    fullname: '[NII]6585'
+    wavelength: 6585.27 
+'SIIa':
+    fullname: '[SII]6718'
+    wavelength: 6718.29
+'SIIb':
+    fullname: '[SII]6733'
+    wavelength: 6732.68

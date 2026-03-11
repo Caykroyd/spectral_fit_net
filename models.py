@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from math import ceil
 
-from layers import BasicResidualBlock, CoordConv1d
+from layers import BasicResidualBlock, CoordConv1d, CoordConv1d_2
 
 
 # class GaussianInferenceModel(nn.Module):
@@ -183,35 +183,117 @@ class CoordGaussNet(nn.Module):
     '''
     Network architecture using Coordinate Convolution layers.
     '''
-    def __init__(self, in_channels, out_channels, signal_length, groups=1):
+    def __init__(self, in_channels, out_channels, signal_length):
         super(CoordGaussNet, self).__init__()
-        self.conv1a = CoordConv1d(in_channels, 8*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv1a = CoordConv1d(in_channels, 8*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn1a = nn.BatchNorm1d(8*in_channels)
-        self.conv1b = CoordConv1d(8*in_channels, 16*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv1b = CoordConv1d(8*in_channels, 16*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn1b = nn.BatchNorm1d(16*in_channels)
         self.pool1 = nn.MaxPool1d(2, stride=2)
 
-        self.conv2a = CoordConv1d(16*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv2a = CoordConv1d(16*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn2a = nn.BatchNorm1d(32*in_channels)
-        self.conv2b = CoordConv1d(32*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv2b = CoordConv1d(32*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn2b = nn.BatchNorm1d(32*in_channels)
         self.pool2 = nn.MaxPool1d(2, stride=2)
 
-        self.conv3a = CoordConv1d(32*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv3a = CoordConv1d(32*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn3a = nn.BatchNorm1d(64*in_channels)
-        self.conv3b = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv3b = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn3b = nn.BatchNorm1d(64*in_channels)
         self.pool3 = nn.MaxPool1d(2, stride=2)
         
-        self.conv4a = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv4a = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn4a = nn.BatchNorm1d(64*in_channels)
-        self.conv4b = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.conv4b = CoordConv1d(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=1)
         self.bn4b = nn.BatchNorm1d(64*in_channels)
         self.pool4 = nn.MaxPool1d(2, stride=2)
         self.activ = nn.ReLU(inplace=False)
         self.sigmoid = nn.Sigmoid()
 
         self.fc1 = nn.Linear(64*in_channels*(signal_length//16), 32*out_channels)
+        self.fc2 = nn.Linear(32*out_channels, out_channels)
+
+        self.dropout = nn.Dropout(p=0.3) # help avoid overfitting
+
+    def forward(self, z):
+        z = self.conv1a(z)
+        z = self.activ(z)
+        z = self.bn1a(z)
+        z = self.conv1b(z)
+        z = self.activ(z)
+        z = self.bn1b(z)
+        z = self.pool1(z)
+
+        z = self.conv2a(z)
+        z = self.activ(z)
+        z = self.bn2a(z)
+        z = self.conv2b(z)
+        z = self.activ(z)
+        z = self.bn2b(z)
+        z = self.pool2(z)
+
+        z = self.conv3a(z)
+        z = self.activ(z)
+        z = self.bn3a(z)
+        z = self.conv3b(z)
+        z = self.activ(z)
+        z = self.bn3b(z)
+        z = self.pool3(z)
+        
+        z = self.conv4a(z)
+        z = self.activ(z)
+        z = self.bn4a(z)
+        z = self.conv4b(z)
+        z = self.activ(z)
+        z = self.bn4b(z)
+        z = self.pool4(z)
+
+        z = torch.flatten(z, 1) 
+
+        z = self.fc1(z)  
+        z = self.dropout(z)
+        z = self.sigmoid(z)
+
+        z = self.fc2(z)  
+        # z = self.sigmoid(z) # Constraint output to [0, 1]
+
+        return z # Output shape: (batch_size, (2 * in_channels + 1) * num_gaussians)
+    
+
+class CoordGaussNet_2(nn.Module):
+    '''
+    Network architecture using Coordinate Convolution layers.
+    '''
+    def __init__(self, in_channels, out_channels, signal_length, groups=1):
+        super(CoordGaussNet_2, self).__init__()
+        self.conv1a = CoordConv1d_2(in_channels, 8*in_channels, kernel_size=5, stride=1, padding=1, bias=False, groups=groups)
+        self.bn1a = nn.BatchNorm1d(8*in_channels)
+        self.conv1b = CoordConv1d_2(8*in_channels, 16*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn1b = nn.BatchNorm1d(16*in_channels)
+        self.pool1 = nn.MaxPool1d(2, stride=2)
+
+        self.conv2a = CoordConv1d_2(16*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn2a = nn.BatchNorm1d(32*in_channels)
+        self.conv2b = CoordConv1d_2(32*in_channels, 32*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn2b = nn.BatchNorm1d(32*in_channels)
+        self.pool2 = nn.MaxPool1d(2, stride=2)
+
+        self.conv3a = CoordConv1d_2(32*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn3a = nn.BatchNorm1d(64*in_channels)
+        self.conv3b = CoordConv1d_2(64*in_channels, 64*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn3b = nn.BatchNorm1d(64*in_channels)
+        self.pool3 = nn.MaxPool1d(2, stride=2)
+        
+        self.conv4a = CoordConv1d_2(64*in_channels, 128*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn4a = nn.BatchNorm1d(128*in_channels)
+        self.conv4b = CoordConv1d_2(128*in_channels, 128*in_channels, kernel_size=3, stride=1, padding=1, bias=False, groups=groups)
+        self.bn4b = nn.BatchNorm1d(128*in_channels)
+        self.pool4 = nn.MaxPool1d(2, stride=2)
+        self.activ = nn.ReLU(inplace=False)
+        self.sigmoid = nn.Sigmoid()
+
+        self.fc1 = nn.Linear(128*in_channels*(signal_length//16), 32*out_channels)
         self.fc2 = nn.Linear(32*out_channels, out_channels)
 
         self.dropout = nn.Dropout(p=0.3) # help avoid overfitting

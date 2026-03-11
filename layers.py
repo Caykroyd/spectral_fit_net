@@ -106,3 +106,51 @@ class CoordConv1d(nn.Module):
                 f'kernel_size={self.conv.kernel_size}, stride={self.conv.stride}, '
                 f'padding={self.conv.padding}, dilation={self.conv.dilation}, '
                 f'groups={self.conv.groups}, bias={self.conv.bias is not None})')
+    
+    
+
+class CoordConv1d_2(nn.Module):
+    '''
+        Modification to CoordConv1d (internally using Conv2d) which allows more versatile coordinates as well as groups
+    '''
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True):
+        super(CoordConv1d_2, self).__init__()
+        
+        # Define a 2D convolution
+        self.conv = nn.Conv2d(in_channels, out_channels, (2, kernel_size), (1, stride), (0, padding), (1, dilation), groups, bias)
+        
+        # Placeholder for the coordinate tensor (will be created lazily)
+        self.coords = None
+
+    def forward(self, z):
+        # z has shape (N, C, D), where N is batch size, C is channels, and D is data length
+        N, C, D = z.size()
+        
+        # Add extra dimension
+        z = z.view(N, C, 1, D)
+
+        if self.coords is None or self.coords.size(-1) != D:
+            self.coords = torch.linspace(0, 1, D, device=z.device).view(1, 1, 1, D)
+            self.coords.requires_grad = False  # This tensor should not require gradients
+        
+        # Expand the coords tensor to match the batch size dynamically
+        coords = self.coords.expand(N, C, 1, D)  # Shape (N, C, 1, D)
+        
+        # Concatenate the coordinate channel with the input along the channel dimension
+        z = torch.cat([z, coords], dim=-2)  # New shape: (N, C, 2, D)
+        
+        # Apply the convolution
+        z = self.conv(z)
+        
+        # Squeeze away extra dimension
+        z = z.squeeze(-2)
+
+        return z
+    
+    
+    def __repr__(self):
+        return (f'{self.__class__.__name__}('
+                f'{self.conv.in_channels - 1}, {self.conv.out_channels}, '
+                f'kernel_size={self.conv.kernel_size}, stride={self.conv.stride}, '
+                f'padding={self.conv.padding}, dilation={self.conv.dilation}, '
+                f'groups={self.conv.groups}, bias={self.conv.bias is not None})')
