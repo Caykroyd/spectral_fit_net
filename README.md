@@ -218,6 +218,7 @@ Requirements for running this project:
 ```bash
 pip install torch numpy matplotlib astropy pyyaml
 ```
+You will probably want to have pytorch with CUDA.
 
 For opening the notebook environment, you may also want:
 
