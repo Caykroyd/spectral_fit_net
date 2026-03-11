@@ -113,30 +113,40 @@ We finally settle for `CoordGaussNet_2` with 3M parameters.
 Coordinate Convolution models inject explicit coordinate information into the convolutional pipeline, which is attractive for spectroscopy because the exact position of peaks matters.
 
 ```mermaid
+%%{init: {
+  "flowchart": {
+    "nodeSpacing": 18,
+    "rankSpacing": 18,
+    "wrappingWidth": 500
+  },
+  "themeVariables": {
+    "fontSize": "12px"
+  }
+}}%%
 flowchart TD
-    A["Input<br/>4 × 100"]
+    A["Input, 4 × 100"]
 
-    B["CoordConv1D, 4 → 32<br/>k = 5"]
-    C["CoordConv1D, 32 → 64<br/>k = 3"]
-    P1["MaxPool1D<br/>÷2"]
+    B["CoordConv1D(k = 5), 4 → 32"]
+    C["CoordConv1D(k = 3), 32 → 64"]
+    P1["MaxPool1D ÷2"]
 
-    D["CoordConv1D, 64 → 128<br/>k = 3"]
-    E["CoordConv1D, 128 → 128<br/>k = 3"]
-    P2["MaxPool1D<br/>÷2"]
+    D["CoordConv1D(k = 3), 64 → 128"]
+    E["CoordConv1D(k = 3), 128 → 128"]
+    P2["MaxPool1D ÷2"]
 
-    F["CoordConv1D, 128 → 256<br/>k = 3"]
-    G["CoordConv1D, 256 → 256<br/>k = 3"]
-    P3["MaxPool1D<br/>÷2"]
+    F["CoordConv1D(k = 3), 128 → 256"]
+    G["CoordConv1D(k = 3), 256 → 256"]
+    P3["MaxPool1D ÷2"]
 
-    H["CoordConv1D, 256 → 512<br/>k = 3"]
-    I["CoordConv1D, 512 → 512<br/>k = 3"]
-    P4["MaxPool1D<br/>÷2"]
+    H["CoordConv1D(k = 3), 256 → 512"]
+    I["CoordConv1D(k = 3), 512 → 512"]
+    P4["MaxPool1D ÷2"]
 
-    J["Flatten"]
-    K["Linear<br/>3840 → 768"]
+    J["Flatten, 3840"]
+    K["Linear, 3840 → 768"]
     L["Dropout + Sigmoid"]
-    M["Linear<br/>768 → 24"]
-    N["Output<br/>24"]
+    M["Linear, 768 → 24"]
+    N["Output, 24"]
 
     A --> B --> C --> P1
     P1 --> D --> E --> P2
