@@ -233,4 +233,4 @@ pip install ipython jupyter
 
 ## Acknowledgements
 
-Special thanks to Aashiya Anitha Shaji for providing the project idea.
+Special thanks to Dr. Aashiya Anitha Shaji for providing the project idea.
