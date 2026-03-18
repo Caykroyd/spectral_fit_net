@@ -16,6 +16,7 @@ This project explores how to reconstruct **multi-line spectroscopic emission fea
   * [4. Neural network architecture](#4-neural-network-architecture)
   * [5. Losses and optimization](#5-losses-and-optimization)
   * [6. Prediction refinement](#6-prediction-refinement)
+* [Next steps](#nextsteps)
 * [Dependencies](#dependencies)
 * [Acknowledgements](#acknowledgements)
 
@@ -213,6 +214,17 @@ We treat the network output as an initial guess for a short gradient-based optim
 </p>
 
 ---
+
+## Next steps
+
+The signal reconstruction loss achieves very low thresholds for both training and validation. The key bottleneck occurs in the estimation of parameters (parameter loss). We have observed empirically that the network has trouble solving the degeneracy when two Gaussians are almost overlapping.
+A possible strategy for future work is to implement a network which learns to encode a distribution of parameters (mean, standard deviation) rather than a single point.
+
+## Future work
+
+The signal reconstruction loss reaches very low values on both the training and validation sets, which suggests that the model is able to reproduce the observed spectra accurately with little over-/under-fitting. The main bottleneck instead lies in the recovery of the underlying free parameters. In particular, the network struggles in regimes where the two Gaussian components strongly overlap, since different combinations of parameters can produce very similar spectral profiles---i.e., the parameters are highly degenerate.
+
+A natural next step is therefore to move beyond simple regression and adopt an uncertainty-aware model. Instead of predicting a single value for each free parameter, the network could be trained to infer a probability distribution, for example by outputting a mean and variance for each parameter. This would allow the model not only to return a best-fit solution, but also to quantify when the inferred parameters are poorly constrained because of overlapping components or low signal-to-noise conditions.
 
 ## Dependencies
 
