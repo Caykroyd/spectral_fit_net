@@ -1,4 +1,4 @@
-# Spectral Line Reconstruction in a Galaxy Merger with Constrained Gaussian Profiles and PyTorch
+# Reconstruction of multi-line spectroscopic emission lines from galaxy mergers using neural networks
 
 This project explores how to reconstruct **multi-line spectroscopic emission features** from a galaxy-merger system by representing each line as a sum of Gaussian components and training a **neural network** via `PyTorch` to infer the underlying parameters directly from spectra.
 
